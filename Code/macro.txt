@@ -1,0 +1,39 @@
+Function GetLastColumnInfo(ByVal TargetSheetName As String) As String
+    Dim ws As Worksheet
+    Dim lastCell As Range
+    Dim lastColNum As Long
+    Dim headerText As String
+    Dim colAddress As String
+    Dim result As String
+    
+    On Error Resume Next
+    Set ws = ThisWorkbook.Sheets(TargetSheetName)
+    On Error GoTo 0
+    
+    If Not ws Is Nothing Then
+        Set lastCell = ws.Cells.Find(What:="*", _
+                                     After:=ws.Range("A1"), _
+                                     LookAt:=xlPart, _
+                                     LookIn:=xlFormulas, _
+                                     SearchOrder:=xlByColumns, _
+                                     SearchDirection:=xlPrevious, _
+                                     MatchCase:=False)
+                                     
+        If Not lastCell Is Nothing Then
+            lastColNum = lastCell.Column
+            ' Get the column letter address (e.g., "AB")
+            colAddress = Split(ws.Cells(1, lastColNum).Address, "$")(1)
+            ' Get the header text (e.g., "Price")
+            headerText = ws.Cells(1, lastColNum).Value
+            
+            ' Combine them with a delimiter (| is a good choice)
+            result = colAddress & "|" & headerText
+        Else
+            result = "A|Sheet empty"
+        End If
+    Else
+        result = "|Sheet not found"
+    End If
+    
+    GetLastColumnInfo = result
+End Function
