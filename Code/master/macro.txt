@@ -1,21 +1,34 @@
-Sub MergeAndCenterCells()
-    Dim mergeRange As Range
-    Set mergeRange = Range("I1:J1") 
-    
-    ' Merge and center the cells
-    With mergeRange
-        .Merge ' Merge the cells
-        .HorizontalAlignment = xlCenter ' Center horizontally
-        .VerticalAlignment = xlCenter ' Center vertically
-    End With
+Sub DeleteRowsBasedOnColumnA()
+
+Dim ws As Worksheet
+Dim lastRow As Long
+Dim i As Long
+Dim cellValue As String
+
+Set ws = ActiveSheet
+lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+
+' Start from row 2 to keep header
+For i = lastRow To 2 Step -1
+    cellValue = LCase(Trim(ws.Cells(i, "A").Value))
+
+    If cellValue = "" _
+       Or InStr(cellValue, "from") > 0 _
+       Or InStr(cellValue, "customer") > 0 _
+       Or InStr(cellValue, "gl date") > 0 Then
+       
+        ws.Rows(i).Delete
+    End If
+Next i
 End Sub
 
-Sub SetPivotTableToClassic(name as string)
+
+Sub SetPivotTableToClassic()
     Dim ws As Worksheet
     Dim pt As PivotTable
 
     ' Set the worksheet where your PivotTable is located
-    Set ws = ThisWorkbook.Sheets(name) ' Change "Sheet1" to your actual sheet name
+    Set ws = ThisWorkbook.Sheets("Export_pivot") ' Change "Sheet1" to your actual sheet name
 
     ' Loop through all PivotTables in the sheet
     For Each pt In ws.PivotTables
@@ -25,199 +38,3 @@ Sub SetPivotTableToClassic(name as string)
 
    
 End Sub
-
-
-Sub DeleteTotalBlankOrEmptyRows()
-    ' Declare variables
-    Dim lastRow As Long
-    Dim i As Long
-    Dim ws As Worksheet
-
-    ' Set the worksheet to be the active sheet
-    Set ws = ActiveSheet
-
-    ' Find the last used row in Column A (Column 1)
-    lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
-
-    ' Loop backward through the rows from the last row to the first
-    For i = lastRow To 1 Step -1
-        ' Get the trimmed, lowercase value of the cell
-        Dim cellValue As String
-        cellValue = LCase(Trim(ws.Cells(i, 1).Value))
-
-        ' Check for any of the three conditions
-        If cellValue = "" Or _
-           (InStr(cellValue, "total") > 0 And InStr(cellValue, "grand total") = 0) Or _
-           cellValue = "(blank)" Then
-            
-            ' If the condition is met, delete the entire row
-            ws.Rows(i).Delete
-		Else
-            Dim valueToDivide As Variant
-            valueToDivide = ws.Cells(i, 3).Value
-            
-            ' Check if the cell is numeric before attempting to divide
-            If IsNumeric(valueToDivide) Then
-                ' Divide the value in column 3 by 100000 and update it
-                ws.Cells(i, 3).Value = valueToDivide / 100000
-            End If
-        End If
-    Next i
-
-    
-End Sub
-
-
-Sub InsertDynamicPieChart()
-    ' Declare variables
-    Dim ws As Worksheet
-    Dim chtObj As ChartObject
-    Dim dataRange As Range
-    Dim lastRow As Long
-
-    ' Set the worksheet to be the active sheet
-    Set ws = ActiveSheet
-
-    ' Find the last used row in Column A (assuming categories are here)
-    lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
-    
-    ' Check for headers and adjust the start of the range
-    ' Assumes your data has a header in row 1
-    If lastRow > 1 Then
-        ' Set the dynamic data range starting from the second row
-        Set dataRange = ws.Range("A2:B" & lastRow)
-    Else
-        
-        Exit Sub
-    End If
-
-    ' Add a new chart object to the worksheet
-    ' Adjust the Left, Top, Width, and Height properties as needed
-    Set chtObj = ws.ChartObjects.Add(Left:=300, Top:=50, Width:=400, Height:=250)
-
-    ' Set the chart properties
-    With chtObj.Chart
-        ' Set the chart type to xlPie for a 2D pie chart
-        .ChartType = xlPie
-        
-        ' Set the dynamic data range as the source
-        .SetSourceData Source:=dataRange
-        
-        ' Add a chart title based on your data headers
-        .HasTitle = True
-        .ChartTitle.Text = "Pie Chart of " & ws.Range("B1").Value & " by " & ws.Range("A1").Value
-        
-        ' Add data labels with percentages
-        With .SeriesCollection(1)
-            .ApplyDataLabels
-            .DataLabels.ShowPercentage = True
-            .DataLabels.ShowValue = False
-        End With
-    End With
-
-    ' Provide a message to confirm the process is complete
-End Sub
-
-
-Sub InsertDynamicClusteredColumnChart()
-    ' Declare variables
-    Dim ws As Worksheet
-    Dim chtObj As ChartObject
-    Dim dataRange As Range
-    Dim lastRow As Long
-    Dim lastCol As Long
-
-    ' Set the worksheet to be the active sheet
-    Set ws = ActiveSheet
-
-    ' Find the last used row and column based on cell A1
-    lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
-    lastCol = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
-
-    ' Exit if not enough data to create a chart (removes the message box)
-    If lastRow <= 1 Or lastCol <= 1 Then
-        Exit Sub
-    End If
-
-    ' Set the dynamic data range including headers
-    Set dataRange = ws.Range(ws.Cells(1, 1), ws.Cells(lastRow, lastCol))
-
-    ' Add a new chart object to the worksheet
-    ' Adjust the Left, Top, Width, and Height properties as needed
-    Set chtObj = ws.ChartObjects.Add(Left:=300, Top:=350, Width:=500, Height:=300)
-
-    ' Set the chart properties
-    With chtObj.Chart
-        ' Set the chart type to xlColumnClustered
-        .ChartType = xlColumnClustered
-        
-        ' Set the dynamic data range as the source, plotting by columns
-        .SetSourceData Source:=dataRange, PlotBy:=xlColumns
-        
-        ' Add a chart title
-        .HasTitle = True
-        .ChartTitle.Text = "Clustered Column Chart"
-        
-        
-    End With
-End Sub
-
-
-Sub DeleteLastRow()
-    ' Declare variables
-    Dim ws As Worksheet
-    Dim lastRow As Long
-
-    ' Set the worksheet to be the active sheet
-    Set ws = ActiveSheet
-
-    ' Find the last non-empty row in column A
-    lastRow = ws.Cells(ws.Rows.Count, "B").End(xlUp).Row
-
-    ' If there is data to delete (lastRow is greater than 1, to protect headers)
-    If lastRow > 1 Then
-        ' Delete the entire last row
-        ws.Rows(lastRow).Delete
-    End If
-End Sub
-
-
-Function GetLastColumnInfo(ByVal TargetSheetName As String) As String
-    Dim ws As Worksheet
-    Dim lastCell As Range
-    Dim lastColNum As Long
-    Dim headerText As String
-    Dim colAddress As String
-    Dim result As String
-    
-    On Error Resume Next
-    Set ws = ThisWorkbook.Sheets(TargetSheetName)
-    On Error GoTo 0
-    
-    If Not ws Is Nothing Then
-        Set lastCell = ws.Cells.Find(What:="*", _
-                                     After:=ws.Range("A1"), _
-                                     LookAt:=xlPart, _
-                                     LookIn:=xlFormulas, _
-                                     SearchOrder:=xlByColumns, _
-                                     SearchDirection:=xlPrevious, _
-                                     MatchCase:=False)
-                                     
-        If Not lastCell Is Nothing Then
-            lastColNum = lastCell.Column
-            ' Get the column letter address (e.g., "AB")
-            colAddress = Split(ws.Cells(1, lastColNum).Address, "$")(1)
-            ' Get the header text (e.g., "Price")
-            headerText = ws.Cells(1, lastColNum).Value
-            
-            ' Combine them with a delimiter (| is a good choice)
-            result = colAddress & "|" & headerText
-        Else
-            result = "A|Sheet empty"
-        End If
-    Else
-        result = "|Sheet not found"
-    End If
-    
-    GetLastColumnInfo = result
-End Function
